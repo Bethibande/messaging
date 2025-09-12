@@ -27,9 +27,11 @@ have a chance of being wildcards.
 The benchmark then posts messages using a static key to ensure we don't perform any heap allocations during the benchmark.
 With this setup, we ensure each posted message triggers a large portion of all registered subscribers.
 There is no optimization for repeated posts to the same key as such we can assume that posting messages to any available topic
-will be roughly the same.
+will be roughly the same in terms of throughput and latency as long as they are not the top-level keys.
+Doing this optimizes CPU cache usage and avoids heap allocations. For a better real-world scenario, it may be necessary
+to run these benchmarks again in the future with randomly chosen keys to ensure we limit CPU cache usage as much as possible.
 
-All benchmarks are run on GraalVM 24.0.1. Depending on the benchmark type different GC settings are used.
+All benchmarks are run on GraalVM 24.0.1 and 32 threads unless states otherwise. Depending on the benchmark type different GC settings are used.
 See the description of each section for more details. GC settings can greatly affect throughput and latency
 even though the benchmarks perform little to no heap allocations after warmup.
 
@@ -59,21 +61,21 @@ The below tests are all run using the default GC provided by GraalVM. Using ZGC 
 ### Latency
 The below tests are all run using ZGC as it yields much better and stable latencies.
 
-| subscribers | p0.00   | p0.50    | p0.90    | p0.95    | p0.99    | p0.999   | p0.9999   | p1.00    |
-|-------------|---------|----------|----------|----------|----------|----------|-----------|----------|
-| 10          | ?       | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 4296 ns   | 21.3 ms  |
-| 100         | ?       | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 6296 ns   | 27.7 ms  |
-| 1k          | 300 ns  | 800 ns   | 900 ns   | 900 ns   | 900 ns   | 1000 ns  | 28075 ns  | 199.9 ms |
-| 10k         | 5800 ns | 12800 ns | 12992 ns | 12992 ns | 14000 ns | 24800 ns | 129152 ns | 35.3 ms  |
+| subscribers | p0.00   | p0.50    | p0.90    | p0.95    | p0.99    | p0.999   | p0.9999  | p1.00    |
+|-------------|---------|----------|----------|----------|----------|----------|----------|----------|
+| 10          | ?       | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 4296 ns  | 21.3 ms  |
+| 100         | ?       | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 6296 ns  | 27.7 ms  |
+| 1k          | 300 ns  | 800 ns   | 900 ns   | 900 ns   | 900 ns   | 1000 ns  | 28.1 µs  | 199.9 ms |
+| 10k         | 5800 ns | 12800 ns | 12992 ns | 12992 ns | 14000 ns | 24800 ns | 129.2 µs | 35.3 ms  |
 
 For peak latencies it's recommended to not run the benchmark on all available CPUs. The following benchmarks are run on 16 instead of 32 threads.
 
-| subscribers | p0.00   | p0.50   | p0.90   | p0.95   | p0.99   | p0.999   | p0.9999  | p1.00      |
-|-------------|---------|---------|---------|---------|---------|----------|----------|------------|
-| 10          | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 100 ns   | 2900 ns  | 131.6 µs   |
-| 100         | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 200 ns   | 3100 ns  | 190.0 µs   |
-| 1k          | 300 ns  | 400 ns  | 400 ns  | 500 ns  | 700 ns  | 800 ns   | 6496 ns  | 217.1 µs   |
-| 10k         | 3800 ns | 4696 ns | 4800 ns | 4800 ns | 8496 ns | 12896 ns | 30784 ns | 269.3.1 µs |
+| subscribers | p0.00   | p0.50   | p0.90   | p0.95   | p0.99   | p0.999   | p0.9999 | p1.00      |
+|-------------|---------|---------|---------|---------|---------|----------|---------|------------|
+| 10          | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 100 ns   | 2900 ns | 131.6 µs   |
+| 100         | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 200 ns   | 3100 ns | 190.0 µs   |
+| 1k          | 300 ns  | 400 ns  | 400 ns  | 500 ns  | 700 ns  | 800 ns   | 6496 ns | 217.1 µs   |
+| 10k         | 3800 ns | 4696 ns | 4800 ns | 4800 ns | 8496 ns | 12896 ns | 30.8 µs | 269.3.1 µs |
 
 ### Conclusion
 The key takeaway from these benchmarks is that the router is able to deliver messages to subscribers with sub-microsecond latency at hundreds of millions of messages per second under ideal conditions.
