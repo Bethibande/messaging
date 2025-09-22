@@ -1,18 +1,34 @@
 package de.bethibande.messaging.router;
 
-public abstract class RouteSubscription {
+import de.bethibande.messaging.net.common.frame.MessageFrame;
+import de.bethibande.messaging.net.common.frame.SubMessageFrame;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+
+public class RouteSubscription {
 
     private final long id;
     private final String[] route;
     private RouterNode target;
 
-    public RouteSubscription(final long id, final String[] route) {
+    private final Channel channel;
+
+    public RouteSubscription(final long id, final Channel channel, final String[] route) {
         this.id = id;
+        this.channel = channel;
         this.route = route;
+    }
+
+    public void remove() {
+        this.target.removeSubscriber(this);
     }
 
     public long getId() {
         return id;
+    }
+
+    public Channel getChannel() {
+        return channel;
     }
 
     public String[] getRoute() {
@@ -23,7 +39,14 @@ public abstract class RouteSubscription {
         return target;
     }
 
-    public abstract void post(final String[] route, final Object message);
+    public ChannelFuture post(final MessageFrame msg) {
+        final SubMessageFrame frame = new SubMessageFrame();
+        frame.setSubscriptionId(this.id);
+        frame.setKey(msg.getKey());
+        frame.setMessage(msg.getBody());
+
+        return this.channel.writeAndFlush(frame);
+    }
 
     public void setTarget(final RouterNode target) {
         this.target = target;

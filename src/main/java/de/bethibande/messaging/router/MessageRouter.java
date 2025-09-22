@@ -1,21 +1,17 @@
 package de.bethibande.messaging.router;
 
 
+import de.bethibande.messaging.net.common.frame.MessageFrame;
+
 import java.util.ArrayDeque;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class MessageRouter {
 
-    private final AtomicLong subscriptionId = new AtomicLong();
     private final RouterNode root = new RouterNode(null, -1);
 
-    private final List<RouteSubscription> subscriptions = new CopyOnWriteArrayList<>();
     private final Supplier<Queue<RouterNode>> queueSupplier;
 
     public MessageRouter() {
@@ -26,44 +22,6 @@ public class MessageRouter {
         this.queueSupplier = queueSupplier;
     }
 
-    protected RouteSubscription createSubscription(final String[] route, final MessageConsumer consumer) {
-        final long id = this.subscriptionId.getAndIncrement();
-        final RouteSubscription subscription = new RouteSubscription(id, route) {
-            @Override
-            public void post(final String[] actualRoute, final Object message) {
-                consumer.accept(this, actualRoute, message);
-            }
-        };
-
-        subscriptions.add(subscription);
-
-        return subscription;
-    }
-
-    public List<RouteSubscription> getSubscriptions() {
-        return subscriptions;
-    }
-
-    public RouteSubscription subscribe(final BiConsumer<String[], Object> consumer, final String... route) {
-        final RouteSubscription subscription = this.createSubscription(
-                route,
-                (s, a, m) -> consumer.accept(s.getRoute(), m)
-        );
-
-        this.addSubscriber(subscription);
-        return subscription;
-    }
-
-    public RouteSubscription subscribe(final MessageConsumer consumer, final String... route) {
-        final RouteSubscription subscription = this.createSubscription(
-                route,
-                consumer
-        );
-
-        this.addSubscriber(subscription);
-        return subscription;
-    }
-
     public void addSubscriber(final RouteSubscription subscriber) {
         root.addSubscriber(subscriber);
     }
@@ -72,14 +30,16 @@ public class MessageRouter {
         root.removeSubscriber(subscriber);
     }
 
-    public void post(final String[] route, final Object message) {
+    public void post(final MessageFrame frame) {
         final Queue<RouterNode> stack = this.queueSupplier.get();
         stack.offer(root);
+
+        final String[] route = frame.getKey();
 
         while (!stack.isEmpty()) {
             final RouterNode current = stack.poll();
 
-            current.post0(route, message);
+            current.post0(frame);
 
             if (route.length == current.getRouterDepth() + 1) continue;
 
@@ -91,6 +51,7 @@ public class MessageRouter {
             final RouterNode directMatch = children.get(route[current.getRouterDepth() + 1]);
             if (directMatch != null) stack.offer(directMatch);
         }
+        frame.getBody().release();
     }
 
     public int countNodes() {

@@ -1,62 +1,71 @@
 package de.bethibande.messaging;
 
+import de.bethibande.messaging.net.client.ClientSubscription;
+import de.bethibande.messaging.net.client.MessageClient;
+import de.bethibande.messaging.net.server.MessageServer;
 import de.bethibande.messaging.router.MessageRouter;
+import de.bethibande.messaging.router.RouterNode;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.function.BiConsumer;
+import java.net.InetSocketAddress;
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 public class Test {
 
-    private static final List<String> CATEGORIES = List.of("entities", "logs");
-    private static final List<String> ENTITIES = List.of("User", "Book", "Car", "Student", "Teacher", "Building");
+    public static void main() throws InterruptedException, ExecutionException {
+        final ThreadLocal<Queue<RouterNode>> queues = ThreadLocal.withInitial(ArrayDeque::new);
+        final MessageRouter router = new MessageRouter(queues::get);
+        final EventLoopGroup eventLoopGroup = new MultiThreadIoEventLoopGroup(2, NioIoHandler.newFactory());
+        final InetSocketAddress address = new InetSocketAddress("localhost", 12345);
 
-    private static int COUNTER;
+        final MessageServer server = new MessageServer(router, address, eventLoopGroup);
+        server.bind().sync();
 
-    public static void randomizeRouter(final MessageRouter router,
-                                       final int subscribers,
-                                       final BiConsumer<String[], Object> consumer) {
-        final Random random = new Random(234543654);
-        for (int i = 0; i < subscribers; i++) {
-            final List<String> key = new ArrayList<>();
-            key.add(CATEGORIES.get(random.nextInt(CATEGORIES.size())));
-            if (random.nextBoolean()) {
-                key.add(ENTITIES.get(random.nextInt(ENTITIES.size())));
-            } else {
-                key.add("*");
-            }
-            if (random.nextBoolean()) {
-                if (random.nextInt(10) >= 1) {
-                    key.add(String.valueOf(random.nextInt(1000)));
-                } else {
-                    key.add("*");
-                }
-            }
-            router.subscribe(consumer, key.toArray(String[]::new));
+        final MessageClient client = new MessageClient(address, eventLoopGroup);
+        client.connect().sync();
+
+        final ClientSubscription sub = client.subscribe("test").get();
+
+        for (int i = 0; i < 50_000; i++) {
+            client.write(new String[]{"test"}, buf -> buf.writeByte(1)).sync();
         }
-    }
 
-    private static void accept(final String[] route, final Object message) {
-        COUNTER++;
-        System.out.println("Msg: " + Arrays.toString(route) + ": " + message);
-    }
+        final int iterations = 1_000_000;
+        final int threads = 4;
 
-    public static void main(String[] args) {
-        final MessageRouter router = new MessageRouter();
-//        router.subscribe(Test::accept, "entities", "*");
-//        router.subscribe(Test::accept, "entities", "User", "*");
-//        router.subscribe(Test::accept, "entities", "User", "abc");
-//        router.subscribe(Test::accept, "entities", "User", "def");
-//        router.subscribe(Test::accept, "entities", "User", "1500");
-//        router.subscribe(Test::accept, "logs", "User", "1500");
-        randomizeRouter(router, 10, Test::accept);
+        final AtomicInteger received = new AtomicInteger();
+        sub.addListener(_ -> received.incrementAndGet());
 
-        final String[] key = new String[]{"entities", "User", "1500"};
-        router.post(key, "test");
+        final long start = System.currentTimeMillis();
+        for (int t = 0; t < threads; t++) {
+            Thread.ofPlatform().start(() -> {
+                for (int i = 0; i < iterations / threads; i++) {
+                    client.write(new String[]{"test"}, buf -> buf.writeByte(1));
+                }
+            });
+        }
 
-        System.out.println("Nodes: " + router.countNodes() + " | Hits per msg: " + COUNTER);
+        while(received.get() < iterations) {
+            LockSupport.parkNanos(10);
+        }
+
+        final long time = System.currentTimeMillis() - start;
+        final double ops = iterations / (time / 1000.0);
+        final double microsPerOp = ((double) iterations / time) * 1000;
+        System.out.println("Took " + time + "ms for " + iterations + " operations (" + ops + " ops/s)");
+        System.out.println(microsPerOp + " µs/op");
+
+        sub.remove().sync();
+
+        client.close().sync();
+        server.close().sync();
+        eventLoopGroup.shutdownGracefully();
     }
 
 }
