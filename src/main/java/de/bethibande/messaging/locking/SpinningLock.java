@@ -19,6 +19,7 @@ public class SpinningLock {
         final long ticket = this.ticketCounter.incrementAndGet();
         while (!tryLock(ticket)) {
             // NOOP: Burn CPU cycles to prevent yielding our thread.
+            Thread.onSpinWait();
         }
         return ticket;
     }

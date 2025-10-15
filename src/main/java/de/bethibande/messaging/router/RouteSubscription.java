@@ -1,19 +1,13 @@
 package de.bethibande.messaging.router;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-
 public class RouteSubscription {
 
     private final long id;
     private final String[] route;
     private RouterNode target;
 
-    private final Channel channel;
-
-    public RouteSubscription(final long id, final Channel channel, final String[] route) {
+    public RouteSubscription(final long id, final String[] route) {
         this.id = id;
-        this.channel = channel;
         this.route = route;
     }
 
@@ -25,9 +19,9 @@ public class RouteSubscription {
         return id;
     }
 
-    public Channel getChannel() {
+    /*public Channel getChannel() {
         return channel;
-    }
+    }*/
 
     public String[] getRoute() {
         return route;

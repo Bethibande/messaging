@@ -14,7 +14,7 @@ public class ExecutorPool {
 
     public ExecutorPool(final int executors) throws IOException {
         for (int i = 0; i < executors; i++) {
-            final PooledExecutor executor = new PooledExecutor(1_000);
+            final PooledExecutor executor = new PooledExecutor(950, 50);
             Thread.ofPlatform().start(executor::loop);
 
             executor.schedule(() -> {
