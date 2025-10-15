@@ -1,7 +1,5 @@
 package de.bethibande.messaging.router;
 
-import de.bethibande.messaging.net.common.frame.MessageFrame;
-import de.bethibande.messaging.net.common.frame.SubMessageFrame;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 
@@ -39,14 +37,14 @@ public class RouteSubscription {
         return target;
     }
 
-    public ChannelFuture post(final MessageFrame msg) {
+    /*public ChannelFuture post(final MessageFrame msg) {
         final SubMessageFrame frame = new SubMessageFrame();
         frame.setSubscriptionId(this.id);
         frame.setKey(msg.getKey());
         frame.setMessage(msg.getBody());
 
         return this.channel.writeAndFlush(frame);
-    }
+    }*/
 
     public void setTarget(final RouterNode target) {
         this.target = target;

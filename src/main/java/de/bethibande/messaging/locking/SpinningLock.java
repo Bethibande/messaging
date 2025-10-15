@@ -1,7 +1,6 @@
 package de.bethibande.messaging.locking;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 public class SpinningLock {
 
@@ -19,7 +18,7 @@ public class SpinningLock {
     public long lockSpinning() {
         final long ticket = this.ticketCounter.incrementAndGet();
         while (!tryLock(ticket)) {
-            LockSupport.parkNanos(100);
+            // NOOP: Burn CPU cycles to prevent yielding our thread.
         }
         return ticket;
     }

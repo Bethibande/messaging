@@ -1,10 +1,7 @@
 package de.bethibande.messaging.router;
 
 
-import de.bethibande.messaging.net.common.frame.MessageFrame;
-
 import java.util.ArrayDeque;
-import java.util.Map;
 import java.util.Queue;
 import java.util.function.Supplier;
 
@@ -30,7 +27,7 @@ public class MessageRouter {
         root.removeSubscriber(subscriber);
     }
 
-    public void post(final MessageFrame frame) {
+    /*public void post(final MessageFrame frame) {
         final Queue<RouterNode> stack = this.queueSupplier.get();
         stack.offer(root);
 
@@ -66,6 +63,6 @@ public class MessageRouter {
         }
 
         return count;
-    }
+    }*/
 
 }

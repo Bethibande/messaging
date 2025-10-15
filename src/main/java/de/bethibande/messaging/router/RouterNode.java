@@ -1,7 +1,6 @@
 package de.bethibande.messaging.router;
 
 import de.bethibande.messaging.locking.SpinningLock;
-import de.bethibande.messaging.net.common.frame.MessageFrame;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,12 +93,12 @@ public class RouterNode {
         return this.children;
     }
 
-    protected void post0(final MessageFrame frame) {
+    /*protected void post0(final MessageFrame frame) {
         final int subscribers = this.subscribers.size();
         for (int i = 0; i < subscribers; i++) {
             frame.getBody().retain();
             this.subscribers.get(i).post(frame).addListener(_ -> frame.getBody().release());
         }
-    }
+    }*/
 
 }
