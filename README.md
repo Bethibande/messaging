@@ -12,10 +12,11 @@ Subscribers may also use wildcards in their keys like `entities/user/*` or `enti
 ```java
 void main() {
     final MessageRouter router = new MessageRouter();
-    router.subscribe((subscription, actualRoute, message) -> {/* do something */}, "entities", "user");
+    final PreComputedKey key = router.createKey("entities", "user");
+    router.subscribe((subscription, actualRoute, message) -> {/* do something */}, key);
 
-    final String[] key = {"entities", "user", "12345"};
-    router.post(key, "test");
+    final PreComputedKey postKey = router.createKey("entities", "user", "12345");
+    router.post(postKey, "test");
 }
 ```
 
