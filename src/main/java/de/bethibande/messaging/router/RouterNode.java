@@ -10,27 +10,34 @@ import java.util.Map;
 public class RouterNode {
 
     private final RouterNode parent;
-    private final String token;
+    private final String textToken;
+    private final long token;
     private final int routerDepth;
 
     private final SpinningLock childrenLock = new SpinningLock();
-    private final Map<String, RouterNode> children = new HashMap<>(0);
+    private final Map<Long, RouterNode> children = new HashMap<>();
 
     private final SpinningLock subscribersLock = new SpinningLock();
     private final List<RouteSubscription> subscribers = new ArrayList<>(0);
 
     public RouterNode(final RouterNode parent, final int routerDepth) {
-        this(parent, "*", routerDepth);
+        this(parent, "*", MessageRouter.WILDCARD_VALUE, routerDepth);
     }
 
-    public RouterNode(final RouterNode parent, final String token, final int routerDepth) {
+    public RouterNode(final RouterNode parent, final String textToken, final long token, final int routerDepth) {
         this.parent = parent;
+        this.textToken = textToken;
         this.token = token;
         this.routerDepth = routerDepth;
     }
 
+    public String getTextToken() {
+        return textToken;
+    }
+
     public void addSubscriber(final RouteSubscription subscriber) {
-        final String[] route = subscriber.getRoute();
+        final long[] route = subscriber.getKey().values();
+        final String[] stringRoute = subscriber.getKey().key();
 
         if (route.length == routerDepth + 1) {
             final long ticket = this.subscribersLock.lockSpinning();
@@ -41,12 +48,13 @@ public class RouterNode {
                 this.subscribersLock.unlock(ticket);
             }
         } else {
-            final String nextKey = route[routerDepth + 1];
+            final long nextKey = route[routerDepth + 1];
+            final String nextKeyString = stringRoute[routerDepth + 1];
             final long ticket = this.childrenLock.lockSpinning();
             try {
                 final RouterNode node = children.computeIfAbsent(
                         nextKey,
-                        k -> new RouterNode(this, k, routerDepth + 1)
+                        k -> new RouterNode(this, nextKeyString, k, routerDepth + 1)
                 );
                 node.addSubscriber(subscriber);
             } finally {
@@ -68,7 +76,7 @@ public class RouterNode {
     }
 
     public void removeSubscriber(final RouteSubscription subscriber) {
-        final String[] route = subscriber.getRoute();
+        final long[] route = subscriber.getKey().values();
 
         if (route.length == this.routerDepth + 1) {
             final long ticket = this.subscribersLock.lockSpinning();
@@ -79,7 +87,7 @@ public class RouterNode {
                 this.subscribersLock.unlock(ticket);
             }
         } else {
-            final String nextKey = route[this.routerDepth + 1];
+            final long nextKey = route[this.routerDepth + 1];
             final RouterNode node = this.children.get(nextKey);
             if (node != null) node.removeSubscriber(subscriber);
         }
@@ -89,14 +97,14 @@ public class RouterNode {
         return routerDepth;
     }
 
-    public Map<String, RouterNode> getChildren() {
+    public Map<Long, RouterNode> getChildren() {
         return this.children;
     }
 
-    protected void post0(final String[] route, final Object message) {
+    protected void post0(final PreComputedKey key, final Object message) {
         final int subscribers = this.subscribers.size();
         for (int i = 0; i < subscribers; i++) {
-            this.subscribers.get(i).post(route, message);
+            this.subscribers.get(i).post(key, message);
         }
     }
 

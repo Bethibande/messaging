@@ -51,31 +51,31 @@ The below tests are all run using the default GC provided by GraalVM. Using ZGC 
 
 | subscribers | messages per second |
 |-------------|---------------------|
-| 10          | 575.7 million       |
-| 100         | 289.6 million       |
-| 1k          | 47.3 million        |
-| 10k         | 3.6 million         |
-| 100k        | 392 thousand        |
+| 10          | 673.6 million       |
+| 100         | 302 million         |
+| 1k          | 48 million          |
+| 10k         | 3 million           |
+| 100k        | 421.9 thousand      |
 
 
 ### Latency
 The below tests are all run using ZGC as it yields much better and stable latencies.
 
-| subscribers | p0.00   | p0.50    | p0.90    | p0.95    | p0.99    | p0.999   | p0.9999  | p1.00    |
-|-------------|---------|----------|----------|----------|----------|----------|----------|----------|
-| 10          | ?       | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 4296 ns  | 21.3 ms  |
-| 100         | ?       | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 6296 ns  | 27.7 ms  |
-| 1k          | 300 ns  | 800 ns   | 900 ns   | 900 ns   | 900 ns   | 1000 ns  | 28.1 µs  | 199.9 ms |
-| 10k         | 5800 ns | 12800 ns | 12992 ns | 12992 ns | 14000 ns | 24800 ns | 129.2 µs | 35.3 ms  |
+| subscribers | p0.00   | p0.50    | p0.90    | p0.95    | p0.99    | p0.999   | p0.9999  | p1.00   |
+|-------------|---------|----------|----------|----------|----------|----------|----------|---------|
+| 10          | ?       | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 100 ns   | 3700 ns  | 14.8 ms |
+| 100         | ?       | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 200 ns   | 5000 ns  | 31.5 ms |
+| 1k          | 300 ns  | 700 ns   | 800 ns   | 800 ns   | 800 ns   | 900 ns   | 16.6 µs  | 23.2 ms |
+| 10k         | 5800 ns | 12800 ns | 12992 ns | 12992 ns | 14000 ns | 24800 ns | 129.2 µs | 35.3 ms |
 
 For peak latencies it's recommended to not run the benchmark on all available CPUs. The following benchmarks are run on 16 instead of 32 threads.
 
-| subscribers | p0.00   | p0.50   | p0.90   | p0.95   | p0.99   | p0.999   | p0.9999 | p1.00      |
-|-------------|---------|---------|---------|---------|---------|----------|---------|------------|
-| 10          | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 100 ns   | 2900 ns | 131.6 µs   |
-| 100         | ?       | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 200 ns   | 3100 ns | 190.0 µs   |
-| 1k          | 300 ns  | 400 ns  | 400 ns  | 500 ns  | 700 ns  | 800 ns   | 6496 ns | 217.1 µs   |
-| 10k         | 3800 ns | 4696 ns | 4800 ns | 4800 ns | 8496 ns | 12896 ns | 30.8 µs | 269.3.1 µs |
+| subscribers | p0.00   | p0.50   | p0.90   | p0.95   | p0.99   | p0.999   | p0.9999 | p1.00    |
+|-------------|---------|---------|---------|---------|---------|----------|---------|----------|
+| 10          | 0 ns    | 0 ns    | 100 ns  | 100 ns  | 100 ns  | 100 ns   | 1200 ns | 108.3 µs |
+| 100         | 0 ns    | 100 ns  | 100 ns  | 100 ns  | 100 ns  | 200 ns   | 2800 ns | 145.2 µs |
+| 1k          | 200 ns  | 400 ns  | 400 ns  | 400 ns  | 400 ns  | 700 ns   | 4896 ns | 1.7 ms   |
+| 10k         | 4096 ns | 4896 ns | 5000 ns | 5096 ns | 8896 ns | 14688 ns | 27.1 µs | 2.7 ms   |
 
 ### Conclusion
 The key takeaway from these benchmarks is that the router is able to deliver messages to subscribers with sub-microsecond latency at hundreds of millions of messages per second under ideal conditions.

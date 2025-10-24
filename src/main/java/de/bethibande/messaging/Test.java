@@ -1,6 +1,7 @@
 package de.bethibande.messaging;
 
 import de.bethibande.messaging.router.MessageRouter;
+import de.bethibande.messaging.router.PreComputedKey;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,30 +18,31 @@ public class Test {
 
     public static void randomizeRouter(final MessageRouter router,
                                        final int subscribers,
-                                       final BiConsumer<String[], Object> consumer) {
+                                       final BiConsumer<PreComputedKey, Object> consumer) {
         final Random random = new Random(234543654);
         for (int i = 0; i < subscribers; i++) {
-            final List<String> key = new ArrayList<>();
-            key.add(CATEGORIES.get(random.nextInt(CATEGORIES.size())));
+            final List<String> strings = new ArrayList<>();
+            strings.add(CATEGORIES.get(random.nextInt(CATEGORIES.size())));
             if (random.nextBoolean()) {
-                key.add(ENTITIES.get(random.nextInt(ENTITIES.size())));
+                strings.add(ENTITIES.get(random.nextInt(ENTITIES.size())));
             } else {
-                key.add("*");
+                strings.add("*");
             }
             if (random.nextBoolean()) {
                 if (random.nextInt(10) >= 1) {
-                    key.add(String.valueOf(random.nextInt(1000)));
+                    strings.add(String.valueOf(random.nextInt(1000)));
                 } else {
-                    key.add("*");
+                    strings.add("*");
                 }
             }
-            router.subscribe(consumer, key.toArray(String[]::new));
+            final PreComputedKey key = router.createKey(strings.toArray(String[]::new));
+            router.subscribe(consumer, key);
         }
     }
 
-    private static void accept(final String[] route, final Object message) {
+    private static void accept(final PreComputedKey key, final Object message) {
         COUNTER++;
-        System.out.println("Msg: " + Arrays.toString(route) + ": " + message);
+        System.out.println("Msg: " + Arrays.toString(key.key()) + ": " + message);
     }
 
     public static void main(String[] args) {
@@ -53,7 +55,7 @@ public class Test {
 //        router.subscribe(Test::accept, "logs", "User", "1500");
         randomizeRouter(router, 10, Test::accept);
 
-        final String[] key = new String[]{"entities", "User", "1500"};
+        final PreComputedKey key = router.createKey("entities", "User", "1500");
         router.post(key, "test");
 
         System.out.println("Nodes: " + router.countNodes() + " | Hits per msg: " + COUNTER);

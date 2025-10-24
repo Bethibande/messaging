@@ -25,6 +25,11 @@
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>1.37</version>
         </dependency>
+        <dependency>
+            <groupId>org.agrona</groupId>
+            <artifactId>agrona</artifactId>
+            <version>2.3.0</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -13,7 +13,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-@Threads(10)
+@Threads(32)
 @Warmup(iterations = 3)
 @Measurement(iterations = 3)
 @Fork(value = 1, warmups = 0)
@@ -21,11 +21,9 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class Bench {
 
-    private static final String[] key = new String[]{"entities", "User", "1500"};
-
     @Benchmark
     public void post(final BenchmarkState state) {
-        state.router.post(key, "Hello World!");
+        state.router.post(state.key, "Hello World!");
     }
 
     public static void main(String[] args) throws IOException {

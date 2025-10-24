@@ -1,29 +1,33 @@
 package de.bethibande.messaging.router;
 
-public abstract class RouteSubscription {
+public final class RouteSubscription {
 
     private final long id;
-    private final String[] route;
+    private final PreComputedKey key;
+    private final MessageConsumer consumer;
     private RouterNode target;
 
-    public RouteSubscription(final long id, final String[] route) {
+    public RouteSubscription(final long id, final PreComputedKey key, final MessageConsumer consumer) {
         this.id = id;
-        this.route = route;
+        this.key = key;
+        this.consumer = consumer;
     }
 
     public long getId() {
         return id;
     }
 
-    public String[] getRoute() {
-        return route;
+    public PreComputedKey getKey() {
+        return key;
     }
 
     public RouterNode getTarget() {
         return target;
     }
 
-    public abstract void post(final String[] route, final Object message);
+    public void post(final PreComputedKey key, final Object message) {
+        this.consumer.accept(this, key, message);
+    }
 
     public void setTarget(final RouterNode target) {
         this.target = target;
